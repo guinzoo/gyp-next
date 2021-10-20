@@ -1876,7 +1876,7 @@ def _GatherSolutionFolders(sln_projects, project_objects, flat):
     return _DictsToFolders("", root, flat)
 
 
-def _GetPathOfProject(qualified_target, spec, options, msvs_version):
+def _GetPathOfProject(qualified_target, spec, options, msvs_version, generator_flags):
     default_config = _GetDefaultConfiguration(spec)
     proj_filename = default_config.get("msvs_existing_vcproj")
     if not proj_filename:
@@ -1886,6 +1886,17 @@ def _GetPathOfProject(qualified_target, spec, options, msvs_version):
         proj_filename = proj_filename + options.suffix + msvs_version.ProjectExtension()
 
     build_file = gyp.common.BuildFile(qualified_target)
+
+    if generator_flags.get("msvs_flat", False):
+        proj_path = os.path.splitext(os.path.basename(build_file))[0] + '/' + proj_filename
+        if options.generator_output:
+            proj_path = os.path.join(options.generator_output, proj_path)
+        fix_prefix = gyp.common.RelativePath(
+            os.path.dirname(build_file),
+            os.path.dirname(os.path.abspath(proj_path))
+        )
+        return proj_path, fix_prefix
+
     proj_path = os.path.join(os.path.dirname(build_file), proj_filename)
     fix_prefix = None
     if options.generator_output:
@@ -1914,7 +1925,7 @@ def _GetPlatformOverridesOfProject(spec):
     return config_platform_overrides
 
 
-def _CreateProjectObjects(target_list, target_dicts, options, msvs_version):
+def _CreateProjectObjects(target_list, target_dicts, options, msvs_version, generator_flags):
     """Create a MSVSProject object for the targets found in target list.
 
   Arguments:
@@ -2129,7 +2140,7 @@ def GenerateOutput(target_list, target_dicts, data, params):
 
     # Figure out all the projects that will be generated and their guids
     project_objects = _CreateProjectObjects(
-        target_list, target_dicts, options, msvs_version
+        target_list, target_dicts, options, msvs_version, generator_flags
     )
 
     # Generate each project.
@@ -2149,6 +2160,10 @@ def GenerateOutput(target_list, target_dicts, data, params):
         if not build_file.endswith(".gyp"):
             continue
         sln_path = os.path.splitext(build_file)[0] + options.suffix + ".sln"
+        msvs_flat = generator_flags.get("msvs_flat", False)
+        if msvs_flat:
+            build_name = os.path.splitext(os,.basename(build_file))[0]
+            sln_path = build_name + '/' + build_name + options.suffix + ".sln"
         if options.generator_output:
             sln_path = os.path.join(options.generator_output, sln_path)
         # Get projects in the solution, and their dependents.
@@ -2156,7 +2171,9 @@ def GenerateOutput(target_list, target_dicts, data, params):
         sln_projects += gyp.common.DeepDependencyTargets(target_dicts, sln_projects)
         # Create folder hierarchy.
         root_entries = _GatherSolutionFolders(
-            sln_projects, project_objects, flat=msvs_version.FlatSolution()
+            sln_projects,
+            project_objects,
+            flat=msvs_version.FlatSolution() or msvs_flat
         )
         # Create solution.
         sln = MSVSNew.MSVSSolution(
