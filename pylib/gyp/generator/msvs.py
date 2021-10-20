@@ -1942,7 +1942,7 @@ def _CreateProjectObjects(target_list, target_dicts, options, msvs_version, gene
     for qualified_target in target_list:
         spec = target_dicts[qualified_target]
         proj_path, fixpath_prefix = _GetPathOfProject(
-            qualified_target, spec, options, msvs_version
+            qualified_target, spec, options, msvs_version, generator_flags
         )
         guid = _GetGuidOfProject(proj_path, spec)
         overrides = _GetPlatformOverridesOfProject(spec)
@@ -2162,7 +2162,7 @@ def GenerateOutput(target_list, target_dicts, data, params):
         sln_path = os.path.splitext(build_file)[0] + options.suffix + ".sln"
         msvs_flat = generator_flags.get("msvs_flat", False)
         if msvs_flat:
-            build_name = os.path.splitext(os,.basename(build_file))[0]
+            build_name = os.path.splitext(os.path.basename(build_file))[0]
             sln_path = build_name + '/' + build_name + options.suffix + ".sln"
         if options.generator_output:
             sln_path = os.path.join(options.generator_output, sln_path)
