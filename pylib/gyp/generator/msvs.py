@@ -2989,9 +2989,11 @@ def _GetMSBuildGlobalProperties(spec, version, guid, gyp_file_name):
         if platform_name and msvs_windows_sdk_version:
             break
     if msvs_windows_sdk_version:
-        properties[0].append(
-            ["WindowsTargetPlatformVersion", str(msvs_windows_sdk_version)]
-        )
+        properties[0].append([
+            "WindowsTargetPlatformVersion",
+            {"Condition": "'$(WindowsTargetPlatformVersion)' == ''"},
+            str(msvs_windows_sdk_version)
+        ])
     elif version.compatible_sdks:
         raise GypError(
             "%s requires any SDK of %s version, but none were found"
