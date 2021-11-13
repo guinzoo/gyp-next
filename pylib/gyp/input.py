@@ -288,18 +288,27 @@ def LoadBuildFileIncludesIntoDict(
 
     # Merge in the included files.
     for include in includes_list:
+        is_source = True
+        if include.endswith("!"):
+            is_source = False
+            include = include[:-1]
+
         if "included" not in aux_data[subdict_path]:
             aux_data[subdict_path]["included"] = []
         aux_data[subdict_path]["included"].append(include)
 
         gyp.DebugOutput(gyp.DEBUG_INCLUDES, "Loading Included File: '%s'", include)
 
-        MergeDicts(
-            subdict,
-            LoadOneBuildFile(include, data, aux_data, None, False, check),
-            subdict_path,
-            include,
-        )
+        include_dict = LoadOneBuildFile(include, data, aux_data, None, False, check)
+
+        if is_source:
+            MergeDicts(subdict, include_dict, subdict_path, include)
+        else:
+            MergeDicts(include_dict, subdict, include, subdict_path)
+
+            # Make paths relative to subdict_path.
+            subdict.clear()
+            MergeDicts(subdict, include_dict, subdict_path, include)
 
     # Recurse into subdictionaries.
     for k, v in subdict.items():
