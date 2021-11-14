@@ -227,14 +227,6 @@ class XcodeProject:
         # targets is full list of targets in the project.
         targets = []
 
-        # does the it define it's own "all"?
-        has_custom_all = False
-
-        # targets_for_all is the list of ordinary_targets that should be listed
-        # in this project's "All" target.  It includes each non_runtest_target
-        # that does not have suppress_wildcard set.
-        targets_for_all = []
-
         for target in self.build_file_dict["targets"]:
             target_name = target["target_name"]
             toolset = target["toolset"]
@@ -250,12 +242,6 @@ class XcodeProject:
             if xcode_target.support_target:
                 support_targets.append(xcode_target.support_target)
                 targets.append(xcode_target.support_target)
-
-            if not int(target.get("suppress_wildcard", False)):
-                targets_for_all.append(xcode_target)
-
-            if target_name.lower() == "all":
-                has_custom_all = True
 
             # If this target has a 'run_as' attribute, add its target to the
             # targets, and add it to the test targets.
@@ -352,24 +338,6 @@ sys.exit(subprocess.call(sys.argv[1:]))" """
         # Sort the groups nicely.  Do this after sorting the targets, because the
         # Products group is sorted based on the order of the targets.
         self.project.SortGroups()
-
-        # Create an "All" target if there's more than one target in this project
-        # file and the project didn't define its own "All" target.  Put a generated
-        # "All" target first so that people opening up the project for the first
-        # time will build everything by default.
-        if len(targets_for_all) > 1 and not has_custom_all:
-            xccl = CreateXCConfigurationList(configurations)
-            all_target = gyp.xcodeproj_file.PBXAggregateTarget(
-                {"buildConfigurationList": xccl, "name": "All"}, parent=self.project
-            )
-
-            for target in targets_for_all:
-                all_target.AddDependency(target)
-
-            # TODO(mark): This is evil because it relies on internal knowledge of
-            # PBXProject._properties.  It's important to get the "All" target first,
-            # though.
-            self.project._properties["targets"].insert(0, all_target)
 
         # The same, but for run_test_targets.
         if len(run_test_targets) > 1:
