@@ -636,6 +636,9 @@ def GenerateOutput(target_list, target_dicts, data, params):
             continue
         xcodeproj_path = build_file_root + options.suffix + ".xcodeproj"
         if options.generator_output:
+            xcodeproj_path = os.path.basename(xcodeproj_path)
+            if xcode_projects:
+                xcodeproj_path = os.path.join("projects", xcodeproj_path)
             xcodeproj_path = os.path.join(options.generator_output, xcodeproj_path)
         xcp = XcodeProject(build_file, xcodeproj_path, build_file_dict)
         xcode_projects[build_file] = xcp
