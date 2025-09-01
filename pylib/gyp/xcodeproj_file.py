@@ -3120,7 +3120,7 @@ class XCProjectFile(XCObject):
         {
             "archiveVersion": [0, int, 0, 1, 1],
             "classes": [0, dict, 0, 1, {}],
-            "objectVersion": [0, int, 0, 1, 46],
+            "objectVersion": [0, int, 0, 1, 54],
             "rootObject": [0, PBXProject, 1, 1],
         }
     )
