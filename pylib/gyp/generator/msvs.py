@@ -1821,7 +1821,7 @@ def _DictsToFolders(base_path, bucket, flat):
             else:
                 folder_children = MSVSNew.MSVSFolder(
                     os.path.join(base_path, folder),
-                    name="(" + folder + ")",
+                    name=folder,
                     entries=folder_children,
                 )
                 children.append(folder_children)
@@ -1849,7 +1849,7 @@ def _CollapseSingles(parent, node):
 
 def _GatherSolutionFolders(build_file, sln_projects, project_objects, flat):
     root = {}
-    subprojects = []
+    subprojects = {}
     # Put main targets to root and others to "projects" folder
     base_path = os.path.dirname(build_file)
     for p in sln_projects:
@@ -1857,17 +1857,14 @@ def _GatherSolutionFolders(build_file, sln_projects, project_objects, flat):
         if p.endswith("#host"):
             target += "_host"
         gyp_dir = os.path.dirname(gyp_file)
+        proj_name = target + ".vcproj"
         if gyp_dir == base_path:
-            root[target + ".vcproj"] = project_objects[p]
+            root[proj_name] = project_objects[p]
         else:
-            subprojects.append(project_objects[p])
+            subprojects[proj_name] = project_objects[p]
 
     if len(subprojects) != 0:
-        root["projects"] = MSVSNew.MSVSFolder(
-            "projects",
-            name="projects",
-            entries=subprojects,
-        )
+        root["projects"] = subprojects
     return _DictsToFolders("", root, flat)
 
 
