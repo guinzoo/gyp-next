@@ -1847,24 +1847,27 @@ def _CollapseSingles(parent, node):
     return node
 
 
-def _GatherSolutionFolders(sln_projects, project_objects, flat):
+def _GatherSolutionFolders(build_file, sln_projects, project_objects, flat):
     root = {}
-    # Convert into a tree of dicts on path.
+    subprojects = []
+    # Put main targets to root and others to "projects" folder
+    base_path = os.path.dirname(build_file)
     for p in sln_projects:
         gyp_file, target = gyp.common.ParseQualifiedTarget(p)[0:2]
         if p.endswith("#host"):
             target += "_host"
         gyp_dir = os.path.dirname(gyp_file)
-        path_dict = _GetPathDict(root, gyp_dir)
-        path_dict[target + ".vcproj"] = project_objects[p]
-    # Walk down from the top until we hit a folder that has more than one entry.
-    # In practice, this strips the top-level "src/" dir from the hierarchy in
-    # the solution.
-    while len(root) == 1 and isinstance(root[next(iter(root))], dict):
-        root = root[next(iter(root))]
-    # Collapse singles.
-    root = _CollapseSingles("", root)
-    # Merge buckets until everything is a root entry.
+        if gyp_dir == base_path:
+            root[target + ".vcproj"] = project_objects[p]
+        else:
+            subprojects.append(project_objects[p])
+
+    if len(subprojects) != 0:
+        root["projects"] = MSVSNew.MSVSFolder(
+            "projects",
+            name="projects",
+            entries=subprojects,
+        )
     return _DictsToFolders("", root, flat)
 
 
@@ -2146,7 +2149,7 @@ def GenerateOutput(target_list, target_dicts, data, params):
         sln_projects += gyp.common.DeepDependencyTargets(target_dicts, sln_projects)
         # Create folder hierarchy.
         root_entries = _GatherSolutionFolders(
-            sln_projects, project_objects, flat=msvs_version.FlatSolution()
+            build_file, sln_projects, project_objects, flat=msvs_version.FlatSolution()
         )
         # Create solution.
         sln = MSVSNew.MSVSSolution(
