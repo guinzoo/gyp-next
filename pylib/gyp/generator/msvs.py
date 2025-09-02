@@ -1882,7 +1882,7 @@ def _GetPathOfProject(qualified_target, spec, options, msvs_version):
     fix_prefix = None
     if options.generator_output:
         project_dir_path = os.path.dirname(os.path.abspath(proj_path))
-        proj_path = os.path.join(options.generator_output, proj_path)
+        proj_path = os.path.join(options.generator_output, "projects", os.path.basename(proj_path))
         fix_prefix = gyp.common.RelativePath(
             project_dir_path, os.path.dirname(proj_path)
         )
@@ -2048,7 +2048,7 @@ def PerformBuild(data, configurations, params):
             continue
         sln_path = build_file_root + options.suffix + ".sln"
         if options.generator_output:
-            sln_path = os.path.join(options.generator_output, sln_path)
+            sln_path = os.path.join(options.generator_output, os.path.basename(sln_path))
 
     for config in configurations:
         arguments = [devenv, sln_path, "/Build", config]
@@ -2131,7 +2131,7 @@ def GenerateOutput(target_list, target_dicts, data, params):
         )
     fixpath_prefix = None
 
-    for build_file in data:
+    for build_file in params["build_files"]:
         # Validate build_file extension
         target_only_configs = configs
         if generator_supports_multiple_toolsets:
@@ -2140,7 +2140,7 @@ def GenerateOutput(target_list, target_dicts, data, params):
             continue
         sln_path = os.path.splitext(build_file)[0] + options.suffix + ".sln"
         if options.generator_output:
-            sln_path = os.path.join(options.generator_output, sln_path)
+            sln_path = os.path.join(options.generator_output, os.path.basename(sln_path))
         # Get projects in the solution, and their dependents.
         sln_projects = gyp.common.BuildFileTargets(target_list, build_file)
         sln_projects += gyp.common.DeepDependencyTargets(target_dicts, sln_projects)
