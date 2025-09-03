@@ -1004,7 +1004,7 @@ def _GetMsbuildToolsetOfProject(proj_path, spec, version):
     return toolset
 
 
-def _GenerateProject(project, options, version, generator_flags, spec):
+def _GenerateProject(project, options, version, generator_flags):
     """Generates a vcproj file.
 
     Arguments:
@@ -1022,7 +1022,7 @@ def _GenerateProject(project, options, version, generator_flags, spec):
         return []
 
     if version.UsesVcxproj():
-        return _GenerateMSBuildProject(project, options, version, generator_flags, spec)
+        return _GenerateMSBuildProject(project, options, version, generator_flags)
     else:
         return _GenerateMSVSProject(project, options, version, generator_flags)
 
@@ -2127,7 +2127,7 @@ def GenerateOutput(target_list, target_dicts, data, params):
     for project in project_objects.values():
         fixpath_prefix = project.fixpath_prefix
         missing_sources.extend(
-            _GenerateProject(project, options, msvs_version, generator_flags, spec)
+            _GenerateProject(project, options, msvs_version, generator_flags)
         )
     fixpath_prefix = None
 
@@ -3666,7 +3666,7 @@ def _GetMSBuildProjectReferences(project):
     return references
 
 
-def _GenerateMSBuildProject(project, options, version, generator_flags, spec):
+def _GenerateMSBuildProject(project, options, version, generator_flags):
     spec = project.spec
     configurations = spec["configurations"]
     toolset = spec["toolset"]
@@ -3676,6 +3676,7 @@ def _GenerateMSBuildProject(project, options, version, generator_flags, spec):
 
     gyp_file = os.path.split(project.build_file)[1]
     sources, excluded_sources = _PrepareListOfSources(spec, generator_flags, gyp_file)
+    
     # Add rules.
     actions_to_add = {}
     props_files_of_rules = set()
@@ -3720,7 +3721,7 @@ def _GenerateMSBuildProject(project, options, version, generator_flags, spec):
     actions_spec, sources_handled_by_action = _GenerateActionsForMSBuild(
         spec, actions_to_add
     )
-
+    
     _GenerateMSBuildFiltersFile(
         project.path + ".filters",
         sources,
