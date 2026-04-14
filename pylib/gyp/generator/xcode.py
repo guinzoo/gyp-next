@@ -486,6 +486,128 @@ sys.exit(subprocess.call(sys.argv[1:]))" """
                 shutil.rmtree(self.path, True)
             raise
 
+        self._WriteSchemes()
+
+    def _WriteSchemes(self):
+        targets = self.project.GetProperty("targets")
+        if not targets:
+            return
+
+        xcodeproj_basename = self.path
+        schemes_dir = os.path.join(self.path, "xcshareddata", "xcschemes")
+
+        executable_product_types = {
+            "com.apple.product-type.tool",
+            "com.apple.product-type.application",
+            "com.apple.product-type.application.watchapp",
+        }
+
+        for xct in targets:
+            if not isinstance(xct, gyp.xcodeproj_file.PBXNativeTarget):
+                continue
+
+            product_type = xct.GetProperty("productType")
+            if product_type not in executable_product_types:
+                continue
+
+            target_name = xct.Name()
+            target_id = xct.id
+            product_ref = xct.GetProperty("productReference")
+            buildable_name = product_ref.Name() if product_ref else target_name
+
+            scheme_xml = (
+                '<?xml version="1.0" encoding="UTF-8"?>\n'
+                "<Scheme\n"
+                '   version = "1.7">\n'
+                "   <BuildAction\n"
+                '      parallelizeBuildables = "YES"\n'
+                '      buildImplicitDependencies = "YES"\n'
+                '      buildArchitectures = "Automatic">\n'
+                "      <BuildActionEntries>\n"
+                "         <BuildActionEntry\n"
+                '            buildForTesting = "YES"\n'
+                '            buildForRunning = "YES"\n'
+                '            buildForProfiling = "YES"\n'
+                '            buildForArchiving = "YES"\n'
+                '            buildForAnalyzing = "YES">\n'
+                "            <BuildableReference\n"
+                '               BuildableIdentifier = "primary"\n'
+                '               BlueprintIdentifier = "%(target_id)s"\n'
+                '               BuildableName = "%(buildable_name)s"\n'
+                '               BlueprintName = "%(target_name)s"\n'
+                '               ReferencedContainer = "container:%(xcodeproj)s">\n'
+                "            </BuildableReference>\n"
+                "         </BuildActionEntry>\n"
+                "      </BuildActionEntries>\n"
+                "   </BuildAction>\n"
+                "   <TestAction\n"
+                '      buildConfiguration = "Debug"\n'
+                '      selectedDebuggerIdentifier = "Xcode.DebuggerFoundation.Debugger.LLDB"\n'
+                '      selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"\n'
+                '      shouldUseLaunchSchemeArgsEnv = "YES"\n'
+                '      shouldAutocreateTestPlan = "YES">\n'
+                "   </TestAction>\n"
+                "   <LaunchAction\n"
+                '      buildConfiguration = "Debug"\n'
+                '      selectedDebuggerIdentifier = "Xcode.DebuggerFoundation.Debugger.LLDB"\n'
+                '      selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"\n'
+                '      launchStyle = "0"\n'
+                '      useCustomWorkingDirectory = "NO"\n'
+                '      ignoresPersistentStateOnLaunch = "NO"\n'
+                '      debugDocumentVersioning = "NO"\n'
+                '      debugServiceExtension = "internal"\n'
+                '      allowLocationSimulation = "YES"\n'
+                '      queueDebuggingEnableBacktraceRecording = "Yes">\n'
+                "      <BuildableProductRunnable\n"
+                '         runnableDebuggingMode = "0">\n'
+                "         <BuildableReference\n"
+                '            BuildableIdentifier = "primary"\n'
+                '            BlueprintIdentifier = "%(target_id)s"\n'
+                '            BuildableName = "%(buildable_name)s"\n'
+                '            BlueprintName = "%(target_name)s"\n'
+                '            ReferencedContainer = "container:%(xcodeproj)s">\n'
+                "         </BuildableReference>\n"
+                "      </BuildableProductRunnable>\n"
+                "   </LaunchAction>\n"
+                "   <ProfileAction\n"
+                '      buildConfiguration = "Release"\n'
+                '      shouldUseLaunchSchemeArgsEnv = "YES"\n'
+                '      savedToolIdentifier = ""\n'
+                '      useCustomWorkingDirectory = "NO"\n'
+                '      debugDocumentVersioning = "NO">\n'
+                "      <BuildableProductRunnable\n"
+                '         runnableDebuggingMode = "0">\n'
+                "         <BuildableReference\n"
+                '            BuildableIdentifier = "primary"\n'
+                '            BlueprintIdentifier = "%(target_id)s"\n'
+                '            BuildableName = "%(buildable_name)s"\n'
+                '            BlueprintName = "%(target_name)s"\n'
+                '            ReferencedContainer = "container:%(xcodeproj)s">\n'
+                "         </BuildableReference>\n"
+                "      </BuildableProductRunnable>\n"
+                "   </ProfileAction>\n"
+                "   <AnalyzeAction\n"
+                '      buildConfiguration = "Debug">\n'
+                "   </AnalyzeAction>\n"
+                "   <ArchiveAction\n"
+                '      buildConfiguration = "Release"\n'
+                '      revealArchiveInOrganizer = "YES">\n'
+                "   </ArchiveAction>\n"
+                "</Scheme>\n"
+            ) % {
+                "target_id": target_id,
+                "buildable_name": buildable_name,
+                "target_name": target_name,
+                "xcodeproj": xcodeproj_basename,
+            }
+
+            scheme_path = os.path.join(schemes_dir, "%s.xcscheme" % target_name)
+
+            if not os.path.exists(scheme_path):
+                os.makedirs(schemes_dir, exist_ok=True)
+                with open(scheme_path, "w") as f:
+                    f.write(scheme_xml)
+
 
 def AddSourceToTarget(source, type, pbxp, xct):
     # TODO(mark): Perhaps source_extensions and library_extensions can be made a
