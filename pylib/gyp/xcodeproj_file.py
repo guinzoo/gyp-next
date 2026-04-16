@@ -2572,7 +2572,7 @@ class PBXNativeTarget(XCTarget):
                     self.SetBuildSetting("EXECUTABLE_PREFIX", prefix)
 
                 if force_outdir is not None:
-                    self.SetBuildSetting("CONFIGURATION_BUILD_DIR", force_outdir)
+                    self.SetBuildSetting("TARGET_BUILD_DIR", force_outdir)
 
                 # TODO(tvl): Remove the below hack.
                 #    http://code.google.com/p/gyp/issues/detail?id=122
