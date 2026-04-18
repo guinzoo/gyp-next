@@ -621,7 +621,7 @@ def AddSourceToTarget(source, type, pbxp, xct):
     library_extensions = ["a", "dylib", "framework", "o"]
 
     basename = posixpath.basename(source)
-    (root, ext) = posixpath.splitext(basename)
+    (_root, ext) = posixpath.splitext(basename)
     if ext:
         ext = ext[1:].lower()
 
@@ -789,7 +789,7 @@ def GenerateOutput(target_list, target_dicts, data, params):
     xcode_targets = {}
     xcode_target_to_target_dict = {}
     for qualified_target in target_list:
-        [build_file, target_name, toolset] = gyp.common.ParseQualifiedTarget(
+        [build_file, target_name, _toolset] = gyp.common.ParseQualifiedTarget(
             qualified_target
         )
 
@@ -1308,7 +1308,7 @@ exit 1
 
         # Add "sources".
         for source in spec.get("sources", []):
-            (source_root, source_extension) = posixpath.splitext(source)
+            (_source_root, source_extension) = posixpath.splitext(source)
             if source_extension[1:] not in rules_by_ext:
                 # AddSourceToTarget will add the file to a root group if it's not
                 # already there.
@@ -1320,7 +1320,7 @@ exit 1
         # it's a bundle of any type.
         if is_bundle:
             for resource in tgt_mac_bundle_resources:
-                (resource_root, resource_extension) = posixpath.splitext(resource)
+                (_resource_root, resource_extension) = posixpath.splitext(resource)
                 if resource_extension[1:] not in rules_by_ext:
                     AddResourceToTarget(resource, pbxp, xct)
                 else:
