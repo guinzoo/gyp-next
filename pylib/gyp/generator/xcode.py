@@ -65,6 +65,7 @@ generator_additional_path_sections = [
     "mac_framework_headers",
     "mac_framework_private_headers",
     # 'mac_framework_dirs', input already handles _dirs endings.
+    "lldb_init",
 ]
 
 # The Xcode-specific keys that exist on targets and aren't moved down to
@@ -80,6 +81,7 @@ generator_additional_non_configuration_keys = [
     "mac_xctest_bundle",
     "mac_xcuitest_bundle",
     "xcode_create_dependents_test_runner",
+    "lldb_init",
 ]
 
 # We want to let any rules apply to files that are resources also.
@@ -515,6 +517,16 @@ sys.exit(subprocess.call(sys.argv[1:]))" """
             product_ref = xct.GetProperty("productReference")
             buildable_name = product_ref.Name() if product_ref else target_name
 
+            lldb_init_line = ""
+            if hasattr(xct, "lldb_init"):
+                gyp_dir = os.path.dirname(os.path.abspath(self.gyp_path))
+                abs_lldb_init = os.path.normpath(
+                    os.path.join(gyp_dir, xct.lldb_init)
+                )
+                lldb_init_line = (
+                    '      customLLDBInitFile = "%s"\n' % abs_lldb_init
+                )
+
             scheme_xml = (
                 '<?xml version="1.0" encoding="UTF-8"?>\n'
                 "<Scheme\n"
@@ -551,6 +563,7 @@ sys.exit(subprocess.call(sys.argv[1:]))" """
                 '      buildConfiguration = "Debug"\n'
                 '      selectedDebuggerIdentifier = "Xcode.DebuggerFoundation.Debugger.LLDB"\n'
                 '      selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"\n'
+                "%(lldb_init_line)s"
                 '      launchStyle = "0"\n'
                 '      useCustomWorkingDirectory = "NO"\n'
                 '      ignoresPersistentStateOnLaunch = "NO"\n'
@@ -599,6 +612,7 @@ sys.exit(subprocess.call(sys.argv[1:]))" """
                 "buildable_name": buildable_name,
                 "target_name": target_name,
                 "xcodeproj": xcodeproj_basename,
+                "lldb_init_line": lldb_init_line,
             }
 
             scheme_path = os.path.join(schemes_dir, "%s.xcscheme" % target_name)
@@ -915,6 +929,10 @@ def GenerateOutput(target_list, target_dicts, data, params):
         pbxp.AppendProperty("targets", xct)
         xcode_targets[qualified_target] = xct
         xcode_target_to_target_dict[xct] = spec
+
+        lldb_init = spec.get("lldb_init")
+        if lldb_init:
+            xct.lldb_init = lldb_init
 
         spec_actions = spec.get("actions", [])
         spec_rules = spec.get("rules", [])
